@@ -8,7 +8,11 @@ load_dotenv()
 NUM_RUNS_TIMES = 5
 
 # TODO: Fill this in!
-YOUR_SYSTEM_PROMPT = ""
+YOUR_SYSTEM_PROMPT = """
+You are an expert mathematician specializing in number theory.
+When solving a problem, reason through it step by step.
+Present your final answer on the last line in the format: "Answer: <number>"
+"""
 
 
 USER_PROMPT = """
