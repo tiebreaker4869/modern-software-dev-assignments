@@ -3,12 +3,9 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, List
+from typing import List
 
-from dotenv import load_dotenv
 from ollama import chat
-
-load_dotenv()
 
 BULLET_PREFIX_PATTERN = re.compile(r"^\s*([-*•]|\d+\.)\s+")
 KEYWORD_PREFIXES = (
@@ -139,28 +136,32 @@ def extract_action_items_llm(text: str, model: str = OLLAMA_MODEL) -> List[str]:
     Returns a deduplicated list of action item strings.
     Raises RuntimeError if Ollama is unreachable or returns malformed output.
     """
-    response = chat(
-        model=model,
-        messages=[
-            {"role": "system", "content": LLM_SYSTEM_PROMPT},
-            {"role": "user", "content": text},
-        ],
-        format={
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                }
+    try:
+        response = chat(
+            model=model,
+            messages=[
+                {"role": "system", "content": LLM_SYSTEM_PROMPT},
+                {"role": "user", "content": text},
+            ],
+            format={
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    }
+                },
+                "required": ["items"],
             },
-            "required": ["items"],
-        },
-    )
+        )
+    except Exception as exc:
+        raise RuntimeError(f"Ollama request failed: {exc}") from exc
 
     raw = response.message.content
     try:
         parsed = json.loads(raw)
-        items: List[str] = parsed.get("items", [])
+        raw_items = parsed.get("items", [])
+        items: List[str] = [str(i) for i in raw_items if isinstance(i, str)]
     except (json.JSONDecodeError, AttributeError) as exc:
         raise RuntimeError(f"LLM returned non-JSON output: {raw!r}") from exc
 
