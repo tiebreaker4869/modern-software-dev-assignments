@@ -1,4 +1,5 @@
 import ast
+import inspect
 import json
 import os
 from typing import Any, Dict, List, Optional, Tuple, Callable
@@ -69,8 +70,30 @@ TOOL_REGISTRY: Dict[str, Callable[..., str]] = {
 # Prompt scaffolding
 # ==========================
 
-# TODO: Fill this in!
-YOUR_SYSTEM_PROMPT = ""
+_TOOL_REGISTRY_VIEW = "\n".join(
+    f"- {name}{inspect.signature(TOOL_REGISTRY[name])}" for name in sorted(TOOL_REGISTRY)
+)
+YOUR_SYSTEM_PROMPT = f"""
+You are a tool-calling engine.
+Return ONLY one valid JSON object (no prose, no markdown fences).
+
+Available tools:
+{_TOOL_REGISTRY_VIEW}
+
+Pick exactly one tool from the list and call it with this schema:
+{{
+  "tool": "<tool_name>",
+  "args": {{
+    "<arg_name>": "<arg_value>"
+  }}
+}}
+
+Rules:
+- Use key "tool" (not "name").
+- Use key "args" as a JSON object.
+- Do not include extra keys.
+- If you feel that you cannot give certain arg, just assign it to None.
+"""
 
 
 def resolve_path(p: str) -> str:
